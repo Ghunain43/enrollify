@@ -2,9 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from app.routers import enrollment
+from app.routers import enrollment, plans
 from app.db.database import engine, Base
-from app.db import models  # noqa: F401 — registers models before create_all
+from app.db import models  # noqa: F401
 
 load_dotenv()
 
@@ -21,6 +21,7 @@ app.add_middleware(
 )
 
 app.include_router(enrollment.router)
+app.include_router(plans.router)
 
 
 @app.get("/health")
