@@ -1,11 +1,46 @@
 from datetime import time
-from app.models.course import Section, EnrollmentPreferences, TimeOfDayPreference, SchedulePlan
+from app.models.course import Section, EnrollmentPreferences, TimeOfDayPreference, SchedulePlan, Weekday
 
 NOON = time(12, 0)
 
 
 def _is_morning_session(start: time) -> bool:
     return start < NOON
+
+
+def _gaps_by_day(sections: list[Section]) -> dict[Weekday, list[float]]:
+    """
+    For each day used, sort that day's sessions by start time and compute
+    the gap (in hours) between the end of one class and the start of the next.
+    Returns e.g. {Weekday.MON: [1.5, 0.5], Weekday.TUE: [3.0]}
+    """
+    by_day: dict[Weekday, list] = {}
+    for sec in sections:
+        for sess in sec.sessions:
+            by_day.setdefault(sess.day, []).append(sess)
+
+    gaps: dict[Weekday, list[float]] = {}
+    for day, sessions in by_day.items():
+        sessions_sorted = sorted(sessions, key=lambda s: s.start)
+        day_gaps = []
+        for i in range(len(sessions_sorted) - 1):
+            end_minutes = sessions_sorted[i].end.hour * 60 + sessions_sorted[i].end.minute
+            next_start_minutes = sessions_sorted[i + 1].start.hour * 60 + sessions_sorted[i + 1].start.minute
+            gap_hours = (next_start_minutes - end_minutes) / 60
+            if gap_hours > 0:
+                day_gaps.append(gap_hours)
+        if day_gaps:
+            gaps[day] = day_gaps
+    return gaps
+
+
+def exceeds_max_gap(sections: list[Section], max_gap_hours: float) -> bool:
+    """True if any single gap between classes on the same day is too long."""
+    gaps = _gaps_by_day(sections)
+    for day_gaps in gaps.values():
+        if any(g > max_gap_hours for g in day_gaps):
+            return True
+    return False
 
 
 def score_combination(
@@ -43,8 +78,18 @@ def score_combination(
         if ratio == 1.0:
             reasons.append("All preferred days off are free")
 
+    # Real gap scoring — reward tight schedules, not just fewer days used
     if preferences.minimize_gaps:
-        score += max(0, (7 - len(used_days))) * 2
+        gaps = _gaps_by_day(sections)
+        all_gap_values = [g for day_gaps in gaps.values() for g in day_gaps]
+        if all_gap_values:
+            avg_gap = sum(all_gap_values) / len(all_gap_values)
+            # Smaller average gap = higher score, capped at 20 points
+            score += max(0, 20 - avg_gap * 4)
+            if avg_gap <= 1.0:
+                reasons.append("Little to no waiting time between classes")
+        else:
+            score += 20  # no gaps at all on any day
 
     if preferences.avoid_instructors:
         conflicts = [
@@ -65,10 +110,17 @@ def rank_combinations(
     preferences: EnrollmentPreferences,
     top_n: int = 4,
 ) -> list[SchedulePlan]:
-    """Score all combinations and return the top N as SchedulePlan objects."""
-    scored: list[SchedulePlan] = []
+    """
+    Filter out combinations with a gap longer than max_gap_hours, score the
+    rest, and return the top N.
+    """
+    valid = [
+        combo for combo in combinations
+        if not exceeds_max_gap(combo, preferences.max_gap_hours)
+    ]
 
-    for combo in combinations:
+    scored: list[SchedulePlan] = []
+    for combo in valid:
         score, reasons = score_combination(combo, preferences)
         explanation = "; ".join(reasons) if reasons else "Conflict-free option"
         scored.append(SchedulePlan(sections=combo, score=score, explanation=explanation))

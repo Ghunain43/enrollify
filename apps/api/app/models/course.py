@@ -53,6 +53,7 @@ class EnrollmentPreferences(BaseModel):
     time_of_day: TimeOfDayPreference = TimeOfDayPreference.NO_PREFERENCE
     preferred_days_off: list[Weekday] = []
     minimize_gaps: bool = True
+    max_gap_hours: float = 3.0
     avoid_instructors: list[str] = []
 
 

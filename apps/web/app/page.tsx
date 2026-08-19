@@ -150,6 +150,7 @@ export default function Home() {
 
   const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
   const [timeOfDay, setTimeOfDay] = useState("all_am");
+  const [maxGapHours, setMaxGapHours] = useState(3);
 
   const [plans, setPlans] = useState<SchedulePlan[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -209,6 +210,7 @@ export default function Home() {
           preferences: {
             time_of_day: timeOfDay,
             preferred_days_off: [],
+            max_gap_hours: maxGapHours,
             minimize_gaps: true,
             avoid_instructors: [],
           },
@@ -347,6 +349,20 @@ export default function Home() {
                   </button>
                 ))}
               </div>
+              <div className="mt-6">
+  <p className="mb-3 text-sm text-indigo-200/60">
+    Max break between classes: <span className="text-white font-medium">{maxGapHours}h</span>
+  </p>
+  <input
+    type="range"
+    min={1}
+    max={6}
+    step={0.5}
+    value={maxGapHours}
+    onChange={(e) => setMaxGapHours(parseFloat(e.target.value))}
+    className="w-full accent-amber-400"
+  />
+</div>
               <button
                 onClick={handleGeneratePlans}
                 disabled={generating || selectedCourses.size === 0}

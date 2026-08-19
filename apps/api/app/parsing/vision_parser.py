@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from app.models.course import ParsedTimetable
+import time as time_module
 
 load_dotenv()
 
@@ -40,6 +41,7 @@ image. If the image is unreadable or not a timetable, return \
 
 
 def parse_timetable_screenshot(image_bytes: bytes, mime_type: str = "image/png") -> ParsedTimetable:
+    start = time_module.time()
     response = client.models.generate_content(
         model="gemini-3.6-flash",
         contents=[
@@ -47,6 +49,7 @@ def parse_timetable_screenshot(image_bytes: bytes, mime_type: str = "image/png")
             types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
         ],
     )
+    print(f"Gemini call took {time_module.time() - start:.1f} seconds")
 
     raw_text = response.text.strip()
     cleaned = raw_text.replace("```json", "").replace("```", "").strip()
