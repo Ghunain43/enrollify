@@ -24,10 +24,10 @@ class Session(BaseModel):
 class Section(BaseModel):
     """One offered section of a course (e.g. CS301 - Section BM-1)."""
     course_code: str = Field(..., examples=["CS301"])
-    course_title: str = Field(..., examples=["Database Systems"])
+    course_title: str | None = None
     section: str = Field(..., examples=["BM-1"])
     instructor: str | None = None
-    credit_hours: float = 3.0
+    credit_hours: float | None = None
     sessions: list[Session]
 
     def overlaps_with(self, other: "Section") -> bool:
@@ -61,3 +61,10 @@ class SchedulePlan(BaseModel):
     sections: list[Section]
     score: float
     explanation: str
+
+
+class ParsedTimetable(BaseModel):
+    """Output of the screenshot-parsing step: all sections found for one university/semester upload."""
+    university: str
+    semester: str | None = None
+    sections: list[Section]
