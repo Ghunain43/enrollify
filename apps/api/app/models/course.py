@@ -54,8 +54,9 @@ class EnrollmentPreferences(BaseModel):
     preferred_days_off: list[Weekday] = []
     minimize_gaps: bool = True
     max_gap_hours: float = 3.0
+    max_classes_per_day: int | None = None
+    preferred_section: str | None = None
     avoid_instructors: list[str] = []
-
 
 class SchedulePlan(BaseModel):
     """One generated, scored, conflict-free schedule option."""

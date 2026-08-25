@@ -8,17 +8,16 @@ def _is_morning_session(start: time) -> bool:
     return start < NOON
 
 
-def _gaps_by_day(sections: list[Section]) -> dict[Weekday, list[float]]:
-    """
-    For each day used, sort that day's sessions by start time and compute
-    the gap (in hours) between the end of one class and the start of the next.
-    Returns e.g. {Weekday.MON: [1.5, 0.5], Weekday.TUE: [3.0]}
-    """
+def _sessions_by_day(sections: list[Section]) -> dict[Weekday, list]:
     by_day: dict[Weekday, list] = {}
     for sec in sections:
         for sess in sec.sessions:
             by_day.setdefault(sess.day, []).append(sess)
+    return by_day
 
+
+def _gaps_by_day(sections: list[Section]) -> dict[Weekday, list[float]]:
+    by_day = _sessions_by_day(sections)
     gaps: dict[Weekday, list[float]] = {}
     for day, sessions in by_day.items():
         sessions_sorted = sorted(sessions, key=lambda s: s.start)
@@ -35,19 +34,21 @@ def _gaps_by_day(sections: list[Section]) -> dict[Weekday, list[float]]:
 
 
 def exceeds_max_gap(sections: list[Section], max_gap_hours: float) -> bool:
-    """True if any single gap between classes on the same day is too long."""
     gaps = _gaps_by_day(sections)
-    for day_gaps in gaps.values():
-        if any(g > max_gap_hours for g in day_gaps):
-            return True
-    return False
+    return any(g > max_gap_hours for day_gaps in gaps.values() for g in day_gaps)
+
+
+def exceeds_max_classes_per_day(sections: list[Section], max_per_day: int | None) -> bool:
+    if max_per_day is None:
+        return False
+    by_day = _sessions_by_day(sections)
+    return any(len(sessions) > max_per_day for sessions in by_day.values())
 
 
 def score_combination(
     sections: list[Section],
     preferences: EnrollmentPreferences,
 ) -> tuple[float, list[str]]:
-    """Returns (score, reasons) — reasons build the human-readable explanation."""
     score = 0.0
     reasons: list[str] = []
 
@@ -56,19 +57,7 @@ def score_combination(
     total_count = len(all_starts) or 1
     morning_ratio = morning_count / total_count
 
-    if preferences.time_of_day == TimeOfDayPreference.ALL_AM:
-        score += morning_ratio * 40
-        if morning_ratio == 1.0:
-            reasons.append("All classes are in the morning")
-    elif preferences.time_of_day == TimeOfDayPreference.ALL_PM:
-        score += (1 - morning_ratio) * 40
-        if morning_ratio == 0.0:
-            reasons.append("All classes are in the afternoon")
-    elif preferences.time_of_day == TimeOfDayPreference.MIXED_TWO_SECTIONS:
-        section_names = {sec.section for sec in sections}
-        if len(section_names) <= 2:
-            score += 30
-            reasons.append("Classes come from at most two sections")
+   
 
     used_days = {s.day for sec in sections for s in sec.sessions}
     if preferences.preferred_days_off:
@@ -78,18 +67,16 @@ def score_combination(
         if ratio == 1.0:
             reasons.append("All preferred days off are free")
 
-    # Real gap scoring — reward tight schedules, not just fewer days used
     if preferences.minimize_gaps:
         gaps = _gaps_by_day(sections)
         all_gap_values = [g for day_gaps in gaps.values() for g in day_gaps]
         if all_gap_values:
             avg_gap = sum(all_gap_values) / len(all_gap_values)
-            # Smaller average gap = higher score, capped at 20 points
             score += max(0, 20 - avg_gap * 4)
             if avg_gap <= 1.0:
                 reasons.append("Little to no waiting time between classes")
         else:
-            score += 20  # no gaps at all on any day
+            score += 20
 
     if preferences.avoid_instructors:
         conflicts = [
@@ -110,14 +97,19 @@ def rank_combinations(
     preferences: EnrollmentPreferences,
     top_n: int = 4,
 ) -> list[SchedulePlan]:
-    """
-    Filter out combinations with a gap longer than max_gap_hours, score the
-    rest, and return the top N.
-    """
     valid = [
         combo for combo in combinations
         if not exceeds_max_gap(combo, preferences.max_gap_hours)
+        and not exceeds_max_classes_per_day(combo, preferences.max_classes_per_day)
     ]
+
+    # Hard filter: if a specific section was requested, ONLY keep combinations
+    # made entirely of that section — no partial/mixed results allowed.
+    if preferences.preferred_section:
+        valid = [
+            combo for combo in valid
+            if all(sec.section == preferences.preferred_section for sec in combo)
+        ]
 
     scored: list[SchedulePlan] = []
     for combo in valid:
