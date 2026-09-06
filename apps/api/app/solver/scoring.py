@@ -45,6 +45,13 @@ def exceeds_max_classes_per_day(sections: list[Section], max_per_day: int | None
     return any(len(sessions) > max_per_day for sessions in by_day.values())
 
 
+def uses_forbidden_day(sections: list[Section], preferred_days_off: list[Weekday]) -> bool:
+    if not preferred_days_off:
+        return False
+    forbidden = set(preferred_days_off)
+    return any(sess.day in forbidden for sec in sections for sess in sec.sessions)
+
+
 def score_combination(
     sections: list[Section],
     preferences: EnrollmentPreferences,
@@ -57,7 +64,12 @@ def score_combination(
     total_count = len(all_starts) or 1
     morning_ratio = morning_count / total_count
 
-   
+    if preferences.preferred_section:
+        matching = sum(1 for sec in sections if sec.section == preferences.preferred_section)
+        ratio = matching / len(sections) if sections else 0
+        score += ratio * 40
+        if ratio == 1.0:
+            reasons.append(f"All classes are from {preferences.preferred_section}")
 
     used_days = {s.day for sec in sections for s in sec.sessions}
     if preferences.preferred_days_off:
@@ -101,10 +113,9 @@ def rank_combinations(
         combo for combo in combinations
         if not exceeds_max_gap(combo, preferences.max_gap_hours)
         and not exceeds_max_classes_per_day(combo, preferences.max_classes_per_day)
+        and not uses_forbidden_day(combo, preferences.preferred_days_off)
     ]
 
-    # Hard filter: if a specific section was requested, ONLY keep combinations
-    # made entirely of that section — no partial/mixed results allowed.
     if preferences.preferred_section:
         valid = [
             combo for combo in valid
