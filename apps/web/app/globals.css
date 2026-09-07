@@ -173,3 +173,16 @@ body {
   max-height: 0 !important;
   overflow: hidden;
 }
+.perspective-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.06) 0px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0px, transparent 1px, transparent 40px);
+  transform: perspective(600px) rotateX(65deg);
+  transform-origin: top;
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent 70%);
+  opacity: 0.5;
+  pointer-events: none;
+}
