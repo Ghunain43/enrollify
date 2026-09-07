@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
@@ -124,6 +124,46 @@ function ThemeToggle() {
     >
       {isLight ? "🌙" : "☀️"}
     </button>
+  );
+}
+
+function ParallaxBackground() {
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const frameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    function handleMove(e: MouseEvent) {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      frameRef.current = requestAnimationFrame(() => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 2;
+        const y = (e.clientY / window.innerHeight - 0.5) * 2;
+        setPos({ x, y });
+      });
+    }
+    window.addEventListener("mousemove", handleMove);
+    return () => window.removeEventListener("mousemove", handleMove);
+  }, []);
+
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden" style={{ perspective: "1000px" }}>
+      <div className="grain" />
+      <div
+        className="orb-1 absolute -left-32 -top-32 h-72 w-72 rounded-full bg-indigo-500/25 blur-3xl transition-transform duration-300 ease-out sm:h-[28rem] sm:w-[28rem]"
+        style={{ transform: `translate3d(${pos.x * 35}px, ${pos.y * 25}px, 0)` }}
+      />
+      <div
+        className="orb-2 absolute -right-24 top-1/4 h-64 w-64 rounded-full bg-amber-400/15 blur-3xl transition-transform duration-300 ease-out sm:h-96 sm:w-96"
+        style={{ transform: `translate3d(${pos.x * -50}px, ${pos.y * -35}px, 0)` }}
+      />
+      <div
+        className="orb-1 absolute bottom-0 left-1/4 h-60 w-60 rounded-full bg-fuchsia-500/15 blur-3xl transition-transform duration-300 ease-out sm:h-80 sm:w-80"
+        style={{ transform: `translate3d(${pos.x * 20}px, ${pos.y * 15}px, 0)` }}
+      />
+      <div
+        className="absolute right-1/4 top-1/2 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl transition-transform duration-300 ease-out"
+        style={{ transform: `translate3d(${pos.x * -25}px, ${pos.y * 40}px, 0)` }}
+      />
+    </div>
   );
 }
 
@@ -271,6 +311,69 @@ function SkeletonPlanCard({ delay }: { delay: number }) {
   );
 }
 
+function ReviewForm() {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    try {
+      await fetch(`${API_URL}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating: rating || null, comment: comment || null }),
+      });
+      setSubmitted(true);
+    } catch {
+      setSubmitted(true);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (submitted) {
+    return (
+      <div className="card-3d pop-in rounded-2xl p-6 text-center">
+        <span className="text-2xl">🙌</span>
+        <p className="text-mid mt-2 text-sm font-medium">Thanks for the feedback!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-3d rounded-2xl p-6">
+      <p className="text-mid mb-3 text-sm font-medium">How was your experience?</p>
+      <div className="mb-4 flex gap-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            onClick={() => setRating(n)}
+            className={`text-2xl transition ${n <= rating ? "opacity-100" : "opacity-30"} hover:scale-110`}
+          >
+            ⭐
+          </button>
+        ))}
+      </div>
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        rows={3}
+        placeholder="Anything you'd change or loved? (optional)"
+        className="text-strong mb-3 w-full rounded-lg glass px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400/50"
+      />
+      <button
+        onClick={handleSubmit}
+        disabled={submitting || (rating === 0 && !comment.trim())}
+        className="rounded-lg bg-gradient-to-r from-amber-300 to-amber-400 px-4 py-2 text-sm font-medium text-indigo-950 transition hover:brightness-105 disabled:opacity-40"
+      >
+        {submitting ? "Sending…" : "Send feedback"}
+      </button>
+    </div>
+  );
+}
+
 type Step = "setup" | "names" | "timing" | "preferences" | "results";
 type MeetingEntry = { day: string; start: string };
 
@@ -282,7 +385,7 @@ const STEP_META: Record<Step, { icon: string; title: string; subtitle: string }>
   results: { icon: "✨", title: "Your best options", subtitle: "Ranked from best fit to just fine" },
 };
 
-export default function Home() {
+export default function PlannerPage() {
   const [step, setStep] = useState<Step>("setup");
   const [numSections, setNumSections] = useState(2);
   const [numCourses, setNumCourses] = useState(3);
@@ -304,9 +407,6 @@ export default function Home() {
   const [pasteError, setPasteError] = useState("");
   const [pasteSuccess, setPasteSuccess] = useState("");
 
-  // Fire a silent wake-up ping the moment the app loads. Free-tier backends
-  // (Render etc.) sleep after inactivity — pinging early means the server is
-  // often already awake by the time the user finishes filling in the form.
   useEffect(() => {
     fetch(`${API_URL}/health`).catch(() => {});
   }, []);
@@ -429,11 +529,8 @@ export default function Home() {
   const meta = STEP_META[step];
 
   return (
-    <main className="text-strong relative min-h-screen overflow-hidden px-4 py-10 sm:px-6 sm:py-14">
-      <div className="grain" />
-      <div className="orb-1 pointer-events-none absolute -left-32 -top-32 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl sm:h-96 sm:w-96" />
-      <div className="orb-2 pointer-events-none absolute -right-24 top-1/3 h-60 w-60 rounded-full bg-amber-400/10 blur-3xl sm:h-80 sm:w-80" />
-      <div className="orb-1 pointer-events-none absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-fuchsia-500/10 blur-3xl sm:h-72 sm:w-72" />
+    <main className="text-strong relative min-h-screen px-4 py-10 sm:px-6 sm:py-14">
+      <ParallaxBackground />
 
       <div className="relative mx-auto max-w-4xl">
         <div className="mb-8 flex items-center justify-between sm:mb-10">
@@ -711,6 +808,12 @@ export default function Home() {
                 <WeekGrid sections={plan.sections} />
               </div>
             ))}
+
+            {!generating && plans.length > 0 && (
+              <div className="step-enter" style={{ animationDelay: `${plans.length * 90 + 100}ms` }}>
+                <ReviewForm />
+              </div>
+            )}
           </div>
         )}
       </div>
