@@ -30,12 +30,17 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="text-strong min-h-screen px-4 py-10 sm:px-6 sm:py-14">
-      <div className="mx-auto max-w-2xl">
-        <h1 className="font-display mb-6 text-2xl font-bold">Reviews — Admin</h1>
+    <main className="text-strong min-h-screen px-5 py-8 sm:px-10 sm:py-12">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-16 flex items-center justify-between">
+          <div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-200 font-display font-bold text-[#18200d]">E</div><span className="font-display text-xl font-bold">Enrollify<span className="text-lime-200">.</span></span></div>
+          <span className="edge-label">Admin / reviews</span>
+        </div>
+        <p className="edge-label mb-3">Feedback console</p>
+        <h1 className="font-display mb-10 text-4xl font-semibold tracking-tight">What students are saying.</h1>
 
         {reviews === null ? (
-          <div className="card-3d rounded-2xl p-6">
+          <div className="card-3d rounded-2xl p-6 sm:p-8">
             <label className="text-muted mb-2 block text-sm">Admin password</label>
             <div className="flex gap-2">
               <input
@@ -43,12 +48,12 @@ export default function AdminPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && loadReviews()}
-                className="text-strong flex-1 rounded-lg glass px-3 py-2 outline-none focus:ring-2 focus:ring-amber-400/50"
+                className="text-strong flex-1 rounded-lg glass px-3 py-3 outline-none focus:ring-2 focus:ring-lime-200/50"
               />
               <button
                 onClick={loadReviews}
                 disabled={loading || !password}
-                className="rounded-lg bg-gradient-to-r from-amber-300 to-amber-400 px-4 py-2 text-sm font-medium text-indigo-950 transition hover:brightness-105 disabled:opacity-40"
+                className="accent-button rounded-lg px-4 py-3 text-sm font-bold transition disabled:opacity-40"
               >
                 {loading ? "Checking…" : "View reviews"}
               </button>

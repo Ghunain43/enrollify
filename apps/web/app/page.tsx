@@ -10,9 +10,9 @@ function ThemeToggle() {
   useEffect(() => {
     const saved = localStorage.getItem("enrollify-theme");
     const light = saved === "light";
-    setIsLight(light);
     document.documentElement.classList.toggle("light", light);
-    setMounted(true);
+    const frame = requestAnimationFrame(() => { setIsLight(light); setMounted(true); });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   function toggle() {
@@ -55,22 +55,9 @@ function ParallaxBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 overflow-hidden" style={{ perspective: "1000px" }}>
       <div className="grain" />
-      <div
-        className="orb-1 absolute -left-32 -top-32 h-72 w-72 rounded-full bg-indigo-500/25 blur-3xl transition-transform duration-300 ease-out sm:h-[28rem] sm:w-[28rem]"
-        style={{ transform: `translate3d(${pos.x * 35}px, ${pos.y * 25}px, 0)` }}
-      />
-      <div
-        className="orb-2 absolute -right-24 top-1/4 h-64 w-64 rounded-full bg-amber-400/15 blur-3xl transition-transform duration-300 ease-out sm:h-96 sm:w-96"
-        style={{ transform: `translate3d(${pos.x * -50}px, ${pos.y * -35}px, 0)` }}
-      />
-      <div
-        className="orb-1 absolute bottom-0 left-1/4 h-60 w-60 rounded-full bg-fuchsia-500/15 blur-3xl transition-transform duration-300 ease-out sm:h-80 sm:w-80"
-        style={{ transform: `translate3d(${pos.x * 20}px, ${pos.y * 15}px, 0)` }}
-      />
-      <div
-        className="absolute right-1/4 top-1/2 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl transition-transform duration-300 ease-out"
-        style={{ transform: `translate3d(${pos.x * -25}px, ${pos.y * 40}px, 0)` }}
-      />
+      <div className="terminal-grid absolute inset-x-0 top-1/3 h-2/3" />
+      <div className="absolute -right-20 top-8 h-72 w-72 rounded-full border border-lime-200/10 transition-transform duration-500" style={{ transform: `translate3d(${pos.x * -24}px, ${pos.y * -18}px, 0) rotateX(62deg) rotateZ(-18deg)` }} />
+      <div className="absolute -left-32 bottom-10 h-80 w-80 rounded-full border border-teal-200/10 transition-transform duration-500" style={{ transform: `translate3d(${pos.x * 18}px, ${pos.y * 22}px, 0) rotateX(62deg) rotateZ(22deg)` }} />
     </div>
   );
 }
@@ -79,19 +66,19 @@ function FeatureCard({ icon, title, description, status, href }: {
   icon: string; title: string; description: string; status: "live" | "soon"; href?: string;
 }) {
   const content = (
-    <div className={`card-3d h-full rounded-2xl p-6 transition ${status === "live" ? "hover:-translate-y-1 hover:shadow-2xl" : "opacity-70"}`}>
-      <div className="mb-4 flex items-start justify-between">
-        <span className="text-3xl">{icon}</span>
+    <div className={`card-3d h-full rounded-[1.25rem] p-5 transition duration-300 ${status === "live" ? "hover:-translate-y-2 hover:border-lime-200/35" : "opacity-65"}`}>
+      <div className="mb-8 flex items-start justify-between">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-200/10 font-mono text-sm font-bold text-lime-200">{icon}</span>
         {status === "live" ? (
-          <span className="rounded-full bg-emerald-400/20 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600">LIVE</span>
+          <span className="edge-label">Live now</span>
         ) : (
-          <span className="surface-inset text-faint rounded-full px-2.5 py-0.5 text-[11px] font-semibold">COMING SOON</span>
+          <span className="edge-label text-faint">Queued</span>
         )}
       </div>
-      <h3 className="font-display text-mid mb-2 text-lg font-semibold">{title}</h3>
-      <p className="text-muted text-sm">{description}</p>
+      <h3 className="font-display text-mid mb-2 text-lg font-semibold tracking-tight">{title}</h3>
+      <p className="text-muted text-sm leading-relaxed">{description}</p>
       {status === "live" && (
-        <p className="mt-4 text-sm font-medium text-amber-500">Try it now →</p>
+        <p className="mt-5 text-xs font-bold uppercase tracking-widest text-lime-200">Open planner <span aria-hidden="true">↗</span></p>
       )}
     </div>
   );
@@ -101,50 +88,56 @@ function FeatureCard({ icon, title, description, status, href }: {
 
 export default function LandingPage() {
   return (
-    <main className="text-strong relative min-h-screen px-4 py-10 sm:px-6 sm:py-14">
+    <main className="text-strong relative min-h-screen overflow-hidden px-5 py-6 sm:px-10 sm:py-8">
       <ParallaxBackground />
 
-      <div className="relative mx-auto max-w-4xl">
-        <div className="mb-10 flex items-center justify-between sm:mb-12">
+      <div className="relative mx-auto max-w-6xl">
+        <div className="mb-16 flex items-center justify-between sm:mb-24">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-300 to-amber-500 font-display text-lg font-bold text-indigo-950 shadow-lg shadow-amber-500/20">E</div>
-            <span className="gradient-text font-display text-xl font-bold tracking-tight sm:text-2xl">Enrollify</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-200 font-display font-bold text-[#18200d] shadow-[0_8px_24px_-10px_#ddff5c]">E</div>
+            <span className="font-display text-lg font-bold tracking-tight sm:text-xl">Enrollify<span className="text-lime-200">.</span></span>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-4"><span className="edge-label hidden text-muted sm:block">MAJU / FALL 2026</span><ThemeToggle /></div>
         </div>
 
-        <div className="step-enter mb-10 text-center sm:mb-12">
-          <h1 className="font-display mb-4 text-2xl font-bold leading-tight sm:text-4xl">
-            Enrollment, sorted before the deadline hits.
-          </h1>
-          <p className="text-muted mx-auto mb-6 max-w-xl text-sm sm:text-base">
-            Tell Enrollify what you need — it hands you the best conflict-free schedule options, ranked.
-          </p>
-          <Link
-            href="/planner"
-            className="inline-block rounded-xl bg-gradient-to-r from-amber-300 to-amber-400 px-8 py-3.5 font-medium text-indigo-950 shadow-lg shadow-amber-500/20 transition hover:scale-[1.02] hover:brightness-105 active:scale-[0.98]"
-          >
-            Start planning your schedule →
-          </Link>
+        <div className="orbit-stage step-enter relative mb-20 grid min-h-[28rem] items-center overflow-hidden rounded-[2rem] border border-white/10 bg-black/10 px-6 py-14 sm:px-16">
+          <div className="relative z-10 max-w-3xl">
+            <p className="edge-label mb-5">Enrollment intelligence / 01</p>
+            <h1 className="font-display mb-6 max-w-3xl text-5xl font-bold leading-[0.95] tracking-[-0.04em] sm:text-7xl">
+              Your semester,<br /><span className="gradient-text">in formation.</span>
+            </h1>
+            <p className="text-muted mb-8 max-w-lg text-sm leading-relaxed sm:text-base">
+              Enrollify turns a messy course list into a calm, conflict-free week. Compare the combinations, keep the best fit, and enroll with a clear head.
+            </p>
+            <Link href="/planner" className="accent-button inline-flex items-center gap-4 rounded-xl px-5 py-3 text-sm font-bold transition">
+              Build my schedule <span className="text-lg">↗</span>
+            </Link>
+          </div>
+          <div className="absolute bottom-10 right-10 hidden w-52 rotate-[-7deg] rounded-2xl border border-lime-200/20 bg-[#212a23]/80 p-4 shadow-2xl backdrop-blur-xl sm:block" style={{ transform: "translate3d(0, 0, 40px) rotate(-7deg)" }}>
+            <div className="mb-5 flex items-center justify-between"><span className="edge-label text-lime-200">Top match</span><span className="text-xs text-teal-200">97%</span></div>
+            <div className="mb-2 h-2 rounded-full bg-lime-200/15"><div className="h-full w-[97%] rounded-full bg-lime-200" /></div>
+            <p className="mt-4 font-mono text-[10px] text-white/60">NO CONFLICTS DETECTED</p>
+          </div>
         </div>
 
-        <div className="step-enter mb-12 sm:mb-16">
+        <div className="step-enter mb-20">
+          <div className="mb-6 flex items-end justify-between"><div><p className="edge-label mb-2">The toolkit</p><h2 className="font-display text-2xl font-semibold tracking-tight">Less guesswork. Better weeks.</h2></div><span className="text-faint hidden font-mono text-xs sm:block">03 / 03</span></div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <FeatureCard
-              icon="🗓️"
+              icon="01"
               title="Enrollment Planner"
               description="Enter your available sections, set your preferences, and get ranked conflict-free schedules in seconds."
               status="live"
               href="/planner"
             />
             <FeatureCard
-              icon="🧮"
+              icon="02"
               title="CGPA Calculator"
               description="A quick, no-fuss way to track your GPA across semesters without digging out a spreadsheet."
               status="soon"
             />
             <FeatureCard
-              icon="🤖"
+              icon="03"
               title="MAJU Bot"
               description="A campus assistant for the everyday questions — deadlines, timings, where things are."
               status="soon"
@@ -152,8 +145,8 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <div className="card-3d step-enter mb-10 rounded-2xl p-6 sm:p-8">
-          <h2 className="font-display text-mid mb-3 text-lg font-semibold">Why I built this</h2>
+        <div className="step-enter mb-12 grid gap-5 border-t border-white/10 pt-10 sm:grid-cols-[0.65fr_1fr] sm:gap-16">
+          <div><p className="edge-label mb-3">A note from the builder</p><h2 className="font-display text-2xl font-semibold tracking-tight">Made for the moment before enrollment.</h2></div>
           <p className="text-muted text-sm leading-relaxed sm:text-base">
             This started as a two-person idea to fix a problem every MAJU student knows —
             watching the enrollment deadline creep closer while trying to piece together a
@@ -164,8 +157,8 @@ export default function LandingPage() {
           </p>
         </div>
 
-        <p className="text-faintest step-enter mt-10 text-center text-xs">
-          Built for MAJU students, one feature at a time.
+        <p className="text-faintest step-enter border-t border-white/10 py-8 text-xs">
+          Built for MAJU students / one feature at a time.
         </p>
       </div>
     </main>

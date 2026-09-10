@@ -14,7 +14,7 @@ class Weekday(str, Enum):
 
 
 class Session(BaseModel):
-    """A single recurring class meeting (e.g. 'Mon 8:30-10:00 in R-204')."""
+    """A single recurring class meeting (e.g. 'Mon 8:00-8:50 in R-204')."""
     day: Weekday
     start: time
     end: time

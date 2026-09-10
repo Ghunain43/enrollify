@@ -16,7 +16,7 @@ type Section = {
 type SchedulePlan = { sections: Section[]; score: number; explanation: string };
 
 const DAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const CLASS_DURATION_MINUTES = 90;
+const CLASS_DURATION_MINUTES = 50;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const LOADING_MESSAGES = [
@@ -102,9 +102,9 @@ function ThemeToggle() {
   useEffect(() => {
     const saved = localStorage.getItem("enrollify-theme");
     const light = saved === "light";
-    setIsLight(light);
     document.documentElement.classList.toggle("light", light);
-    setMounted(true);
+    const frame = requestAnimationFrame(() => { setIsLight(light); setMounted(true); });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   function toggle() {
@@ -147,22 +147,9 @@ function ParallaxBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 overflow-hidden" style={{ perspective: "1000px" }}>
       <div className="grain" />
-      <div
-        className="orb-1 absolute -left-32 -top-32 h-72 w-72 rounded-full bg-indigo-500/25 blur-3xl transition-transform duration-300 ease-out sm:h-[28rem] sm:w-[28rem]"
-        style={{ transform: `translate3d(${pos.x * 35}px, ${pos.y * 25}px, 0)` }}
-      />
-      <div
-        className="orb-2 absolute -right-24 top-1/4 h-64 w-64 rounded-full bg-amber-400/15 blur-3xl transition-transform duration-300 ease-out sm:h-96 sm:w-96"
-        style={{ transform: `translate3d(${pos.x * -50}px, ${pos.y * -35}px, 0)` }}
-      />
-      <div
-        className="orb-1 absolute bottom-0 left-1/4 h-60 w-60 rounded-full bg-fuchsia-500/15 blur-3xl transition-transform duration-300 ease-out sm:h-80 sm:w-80"
-        style={{ transform: `translate3d(${pos.x * 20}px, ${pos.y * 15}px, 0)` }}
-      />
-      <div
-        className="absolute right-1/4 top-1/2 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl transition-transform duration-300 ease-out"
-        style={{ transform: `translate3d(${pos.x * -25}px, ${pos.y * 40}px, 0)` }}
-      />
+      <div className="terminal-grid absolute inset-x-0 top-1/3 h-2/3" />
+      <div className="absolute -right-20 top-8 h-72 w-72 rounded-full border border-lime-200/10 transition-transform duration-500" style={{ transform: `translate3d(${pos.x * -24}px, ${pos.y * -18}px, 0) rotateX(62deg) rotateZ(-18deg)` }} />
+      <div className="absolute -left-32 bottom-10 h-80 w-80 rounded-full border border-teal-200/10 transition-transform duration-500" style={{ transform: `translate3d(${pos.x * 18}px, ${pos.y * 22}px, 0) rotateX(62deg) rotateZ(22deg)` }} />
     </div>
   );
 }
@@ -293,7 +280,7 @@ function GeneratingProgress() {
       <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
         <div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-500 transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
       </div>
-      <p className="text-faint mt-3 text-xs">First load can take up to a minute if the server's been idle — hang tight.</p>
+      <p className="text-faint mt-3 text-xs">First load can take up to a minute if the server&apos;s been idle — hang tight.</p>
     </div>
   );
 }
@@ -454,7 +441,7 @@ export default function PlannerPage() {
   }
 
   function addMeeting(key: string) {
-    setGrid((prev) => ({ ...prev, [key]: [...(prev[key] ?? []), { day: "Mon", start: "08:30" }] }));
+    setGrid((prev) => ({ ...prev, [key]: [...(prev[key] ?? []), { day: "Mon", start: "08:00" }] }));
   }
 
   function removeMeeting(key: string, index: number) {
@@ -529,33 +516,34 @@ export default function PlannerPage() {
   const meta = STEP_META[step];
 
   return (
-    <main className="text-strong relative min-h-screen px-4 py-10 sm:px-6 sm:py-14">
+    <main className="text-strong relative min-h-screen overflow-hidden px-4 py-7 sm:px-8 sm:py-10">
       <ParallaxBackground />
 
-      <div className="relative mx-auto max-w-4xl">
-        <div className="mb-8 flex items-center justify-between sm:mb-10">
+      <div className="relative mx-auto max-w-5xl">
+        <div className="mb-10 flex items-center justify-between sm:mb-14">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-300 to-amber-500 font-display text-lg font-bold text-indigo-950 shadow-lg shadow-amber-500/20">E</div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-200 font-display font-bold text-[#18200d] shadow-[0_8px_24px_-10px_#ddff5c]">E</div>
             <div>
-              <h1 className="gradient-text font-display text-xl font-bold tracking-tight sm:text-2xl">Enrollify</h1>
-              <p className="text-muted text-xs sm:text-sm">Enrollment, sorted before the deadline hits.</p>
+              <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">Enrollify<span className="text-lime-200">.</span></h1>
+              <p className="edge-label text-muted">Schedule studio / Fall 2026</p>
             </div>
           </div>
           <ThemeToggle />
         </div>
 
-        <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-500 transition-all duration-500 ease-out" style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }} />
+        <div className="mb-3 flex items-center justify-between"><span className="edge-label">Build sequence</span><span className="text-faint font-mono text-xs">0{stepIndex + 1} / 0{steps.length}</span></div>
+        <div className="mb-3 h-1 w-full overflow-hidden rounded-full bg-white/10">
+          <div className="h-full rounded-full bg-lime-200 transition-all duration-500 ease-out" style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }} />
         </div>
-        <div className="text-faint mb-6 flex items-center justify-between text-xs sm:mb-8">
-          <span>Step {stepIndex + 1} of {steps.length}</span>
-          <span className="hidden sm:inline">{steps.map((s) => STEP_META[s].icon).join(" · ")}</span>
+        <div className="text-faint mb-10 flex items-center justify-between text-xs sm:mb-12">
+          <span>{meta.title}</span>
+          <span className="hidden font-mono sm:inline">{steps.map((s) => STEP_META[s].icon).join(" / ")}</span>
         </div>
 
-        <div key={step} className="step-enter mb-5 flex items-center gap-3 sm:mb-6">
-          <span className="text-2xl sm:text-3xl">{meta.icon}</span>
+        <div key={step} className="step-enter mb-7 flex items-start gap-4 sm:mb-8">
+          <span className="edge-label mt-1 text-lime-200">{meta.icon}</span>
           <div>
-            <h2 className="font-display text-lg font-semibold sm:text-xl">{meta.title}</h2>
+            <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">{meta.title}</h2>
             <p className="text-muted text-xs sm:text-sm">{meta.subtitle}</p>
           </div>
         </div>
@@ -745,7 +733,7 @@ export default function PlannerPage() {
               <p className="text-muted mb-3 text-sm">🌴 Days you want off</p>
               <div className="flex flex-wrap gap-2">
                 {DAY_ORDER.map((day) => (
-                  <button key={day} onClick={() => setDaysOff((prev) => { const n = new Set(prev); n.has(day) ? n.delete(day) : n.add(day); return n; })}
+                  <button key={day} onClick={() => setDaysOff((prev) => { const next = new Set(prev); if (next.has(day)) next.delete(day); else next.add(day); return next; })}
                     className={`rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-95 ${daysOff.has(day) ? "bg-amber-400 text-indigo-950" : "text-muted glass hover:opacity-80"}`}>
                     {day}
                   </button>
