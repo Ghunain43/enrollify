@@ -1,7 +1,26 @@
 import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON
+from sqlalchemy import (
+    Column, Integer, BigInteger, String, Text, DateTime,
+    ForeignKey, JSON, Computed, func,
+)
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import relationship
+from pgvector.sqlalchemy import Vector
 from app.db.database import Base
+
+
+class KnowledgeChunk(Base):
+    __tablename__ = "knowledge_chunks"
+
+    id = Column(BigInteger, primary_key=True)
+    url = Column(Text, nullable=False, index=True)
+    title = Column(Text)
+    source = Column(Text, nullable=False, default="scraped")
+    content = Column(Text, nullable=False)
+    embedding = Column(Vector(384), nullable=False)
+    tsv = Column(TSVECTOR, Computed(
+        "to_tsvector('english', coalesce(title,'') || ' ' || content)", persisted=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class User(Base):
@@ -27,6 +46,7 @@ class SavedPlan(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", back_populates="saved_plans")
+
 
 class Review(Base):
     __tablename__ = "reviews"

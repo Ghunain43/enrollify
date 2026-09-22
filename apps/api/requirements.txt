@@ -8,3 +8,16 @@ sqlalchemy==2.0.35
 psycopg[binary]==3.2.3
 pytest==8.3.3
 httpx==0.27.2
+fastapi
+uvicorn
+sqlalchemy
+psycopg[binary]
+pgvector
+python-dotenv
+groq
+sentence-transformers
+apscheduler
+beautifulsoup4
+requests
+playwright
+trafilatura
