@@ -49,19 +49,22 @@ disagree, prefer the one that mentions the most recent intake or year.
 version (after 14 years, e.g. ADP, BA, BSc, B.Com). Unless the student mentions 14 years, ADP, \
 BA/BSc/B.Com or "2 years", answer for the regular version, and mention the 2-year option in \
 one short sentence only if it helps.
-- Never say a named person holds a position (president, dean, head of department, etc.) unless a source explicitly says so. A person appearing on a page does not mean they hold that role. If the sources don't clearly name the current holder, say you're not sure and point them to info@jinnah.edu. Never guess a name from a page title or web address.
+- Some sources describe the process for foreign/international applicants specifically (visas, \
+passports, IBCC/HEC equivalence for foreign credentials, MOI documents). Unless the student \
+says they are applying from abroad or as a foreign national, answer for the normal local \
+process and leave those details out entirely, rather than mixing them into a general answer.
+- Never write "(source 1)", "[2]", "according to source 3" or similar. The student never sees \
+the source list or its numbering, so referencing it by number is meaningless to them and must \
+never appear in your reply.
 - When it matters, add that details can change by intake.
-- If the sources don't cover the question, say so honestly and point them to info@jinnah.edu \
-or the UAN 021-111-87-87-87.
-- If the question is unclear, ask one short clarifying question.
-- If the question has nothing to do with MAJU, say you can only help with MAJU questions.
-
 How to write:
-- Plain conversational sentences: no markdown, tables, bullet symbols, dashes as list markers, \
-bold text or links. Put lists inside a sentence, separated by commas.
+- Plain conversational sentences only. NEVER use markdown: no "-" or "*" bullets, no "1." "2." \
+numbered steps, no "**bold**", no headers, no tables. If you have several items, weave them \
+into one or two sentences separated by commas, e.g. "you'll need X, Y and Z."
 - Write percentages like 50% (no space before the % sign).
 - 1-3 emojis, used naturally, not on every sentence.
-- 2-4 sentences for simple questions; longer only when the question truly needs it.
+- 2-4 sentences for simple questions; longer only when the question truly needs it, but still \
+as plain prose paragraphs, never a list.
 - Always finish your thought completely."""
 
 FALLBACK = "Hmm, I couldn't put an answer together for that 😅 Mind asking it again in a minute? Or reach the university at info@jinnah.edu."
@@ -82,6 +85,22 @@ def _get_client():
 
 def _strip_think(text: str) -> str:
     return re.sub(r"<think>.*?</think>", "", text or "", flags=re.S).strip()
+
+
+def _strip_markdown(text: str) -> str:
+    """Safety net: the prompt bans markdown and source numbers, but the model sometimes
+    slips. This removes the common artifacts without trying to fully re-flow the prose."""
+    if not text:
+        return text
+    text = re.sub(r"\(?\bsource[s]?\s*\d+(\s*(,|and|&)\s*\d+)*\)?", "", text, flags=re.I)
+    text = re.sub(r"\[\d+(\s*,\s*\d+)*\]", "", text)
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    lines = []
+    for line in text.split("\n"):
+        stripped = re.sub(r"^\s*(?:[-*•]|\d+[.)])\s+", "", line)
+        lines.append(stripped)
+    text = " ".join(l.strip() for l in lines if l.strip())
+    return re.sub(r"\s{2,}", " ", text).strip()
 
 
 def _gemini(messages: list, max_tokens: int, temperature: float):
@@ -116,7 +135,7 @@ def _complete(messages: list, max_tokens: int, temperature: float):
                 print(f"[answer] WARNING: {model} hit the token limit; raise MAX_TOKENS")
             if text:
                 usage = getattr(resp, "usage", None)
-                return text, model, getattr(usage, "total_tokens", None)
+                return _strip_markdown(text), model, getattr(usage, "total_tokens", None)
             errors.append(f"{model}: empty answer")
         except Exception as e:
             msg = str(e).lower()

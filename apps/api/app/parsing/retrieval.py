@@ -40,7 +40,10 @@ OFFICIAL_PATHS = {
     "/societies-clubs", "/placement-office", "/university-management",
     "/presidents-message", "/chancellor-message", "/our_team",
 }
-OFFICIAL_PREFIXES = ("/my-maju/", "/admissions/", "/our_team/")
+# Individual /our_team/<person> bios are NOT included: boosting every staff profile page
+# made irrelevant people (e.g. the president's own bio) outrank the actual answer and get
+# shown as sources for unrelated questions. Verified leadership facts belong in curated.py.
+OFFICIAL_PREFIXES = ("/my-maju/", "/admissions/")
 
 ALIASES = {
     "bscs": "BS Computer Science",

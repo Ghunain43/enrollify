@@ -139,8 +139,9 @@ export default function LandingPage() {
             <FeatureCard
               icon="03"
               title="MAJU Bot"
-              description="A campus assistant for the everyday questions — deadlines, timings, where things are."
-              status="soon"
+              description="Ask about fees, deadlines, eligibility, or policy — answered straight from the university's own pages."
+              status="live"
+              href="/chatbot"
             />
           </div>
         </div>
